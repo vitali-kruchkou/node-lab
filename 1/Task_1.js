@@ -7,7 +7,6 @@ let resultFile = process.argv[3];
 let separator = process.argv[4];
 
 const CSVToJSON = (csv) => {
-  console.log(typeof csv);
   const lines = csv.split("\n");
   const keys = lines[0].split(",");
   return lines.slice(1).map((line) => {
@@ -19,21 +18,43 @@ const CSVToJSON = (csv) => {
   });
 };
 
-const ToJSONStream = new Transform({
-  objectMode: true,
-  transform(chunk, encoding, callback) {
+// const ToJSONStream = new Transform({
+//   objectMode: true,
+//   transform(chunk, encoding, callback) {
+// if (encoding !== "utf8") {
+//   this.emit("error", new Error("Only UTF-8 sources are supported"));
+// }
+//     console.log(chunk);
+//     console.log("End chunk");
+
+//     callback(null, chunk);
+//   },
+// });
+
+class ToJsonStream extends Transform {
+  constructor(options = {}) {
+    options = Object.assign({}, options, {
+      objectMode: true,
+    });
+    super(options);
+  }
+
+  _transform(chunk, encoding, callback) {
     if (encoding !== "utf8") {
       this.emit("error", new Error("Only UTF-8 sources are supported"));
+      return callback();
     }
-    this.push(CSVToJSON(chunk));
+    const chunkJSON = CSVToJSON(chunk);
+
+    this.push(JSON.stringify(chunkJSON, null, 2));
     callback();
-  },
-});
+  }
+}
 
 for (const [key, value] of Object.entries(process.memoryUsage())) {
   console.log(`Memory usage by ${key}, ${value / 1000000}MB `);
 }
 
 fs.createReadStream("./test.csv", "utf8")
-  .pipe(ToJSONStream)
+  .pipe(new ToJsonStream())
   .pipe(fs.createWriteStream("./file22.json"));
