@@ -25,26 +25,20 @@ function splitComponentsByComma(str) {
 
 const CSVToJSON = (csv) => {
   const lines = csv.split("\r\n");
+  const result = [];
 
-  let indexToStart = 1;
-  if (keys) {
-    indexToStart = 0;
-  }
   keys = keys || lines[0].split(",");
-  return lines.slice(indexToStart).map((line) => {
-    return (
-      separator ? line.split(separator) : splitComponentsByComma(line)
-    ).reduce((acc, cur, i) => {
-      const toAdd = {};
-      toAdd[keys[i]] = cur;
-      return { ...acc, ...toAdd };
-    }, {});
-    // return line.split(",").reduce((acc, cur, i) => {
-    //   const toAdd = {};
-    //   toAdd[keys[i]] = cur;
-    //   return { ...acc, ...toAdd };
-    // }, {});
-  });
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i]) continue;
+    const obj = {};
+    const currentline = splitComponentsByComma(lines[i]);
+
+    for (let j = 0; j < keys.length; j++) {
+      obj[keys[j]] = currentline[j];
+    }
+    result.push(obj);
+  }
+  return result;
 };
 
 // const ToJSONStream = new Transform({
