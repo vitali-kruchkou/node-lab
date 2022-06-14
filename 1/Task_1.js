@@ -2,19 +2,48 @@ const { Transform } = require("stream");
 const fs = require("fs");
 var process = require("process");
 
+let keys;
+
 let sourceFile = process.argv[2];
 let resultFile = process.argv[3];
 let separator = process.argv[4];
 
+function splitComponentsByComma(str) {
+  var ret = [];
+  var arr = str.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+  for (let i in arr) {
+    let element = arr[i];
+    if ('"' === element[0]) {
+      element = element.substr(1, element.length - 2);
+    } else {
+      element = arr[i].trim();
+    }
+    ret.push(element);
+  }
+  return ret;
+}
+
 const CSVToJSON = (csv) => {
-  const lines = csv.split("\n");
-  const keys = lines[0].split(",");
-  return lines.slice(1).map((line) => {
-    return line.split(",").reduce((acc, cur, i) => {
+  const lines = csv.split("\r\n");
+
+  let indexToStart = 1;
+  if (keys) {
+    indexToStart = 0;
+  }
+  keys = keys || lines[0].split(",");
+  return lines.slice(indexToStart).map((line) => {
+    return (
+      separator ? line.split(separator) : splitComponentsByComma(line)
+    ).reduce((acc, cur, i) => {
       const toAdd = {};
       toAdd[keys[i]] = cur;
       return { ...acc, ...toAdd };
     }, {});
+    // return line.split(",").reduce((acc, cur, i) => {
+    //   const toAdd = {};
+    //   toAdd[keys[i]] = cur;
+    //   return { ...acc, ...toAdd };
+    // }, {});
   });
 };
 
@@ -57,4 +86,4 @@ for (const [key, value] of Object.entries(process.memoryUsage())) {
 
 fs.createReadStream("./test.csv", "utf8")
   .pipe(new ToJsonStream())
-  .pipe(fs.createWriteStream("./file22.json"));
+  .pipe(fs.createWriteStream("./file.json"));
